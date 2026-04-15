@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Passagekalk">
+<meta name="theme-color" content="#f0a500">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Sliptåg – Passagekalkylator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
+:root{--bg:#0d0f14;--panel:#141720;--border:#252a38;--accent:#f0a500;--text:#d8dce8;--muted:#5a6070;--green:#39d98a;--red:#ff4757;--blue:#4ea8de;--input-bg:#1a1e2b;}
+[data-theme="light"]{--bg:#f0f2f5;--panel:#fff;--border:#d0d5e0;--accent:#d4820a;--text:#1a1d26;--muted:#7a8099;--green:#1a8a56;--red:#cc2233;--blue:#2277bb;--input-bg:#e8eaf0;}
+[data-theme="navy"]{--bg:#0a1628;--panel:#0f1f3d;--border:#1e3060;--accent:#f0a500;--text:#c8d8f0;--muted:#4a6080;--green:#39d98a;--red:#ff4757;--blue:#60b0ff;--input-bg:#0d1830;}
+[data-theme="forest"]{--bg:#0d1a0f;--panel:#132016;--border:#1e3522;--accent:#7ec850;--text:#c8e0cc;--muted:#4a6050;--green:#39d98a;--red:#ff6655;--blue:#60c0a0;--input-bg:#101c12;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;min-height:100vh;padding:20px 16px 60px;transition:background .3s,color .3s;}
+.container{max-width:720px;margin:0 auto;}
+header{text-align:center;margin-bottom:16px;}
+.header-tag{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;opacity:.8;}
+.subtitle{margin-top:4px;font-size:14px;color:var(--muted);font-weight:300;letter-spacing:1px;}
+.rail-line{width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);margin-top:14px;opacity:.4;}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;}
+.lang-bar{display:flex;gap:5px;}
+.lang-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:5px 9px;cursor:pointer;transition:.15s;}
+.lang-btn.active{border-color:var(--accent);color:var(--accent);}
+.theme-bar{display:flex;gap:5px;align-items:center;}
+.theme-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:.15s;}
+.theme-dot.active{border-color:var(--accent);}
+.theme-dot[data-theme="dark"]{background:#0d0f14;}
+.theme-dot[data-theme="light"]{background:#f0f2f5;border-color:#ccc;}
+.theme-dot[data-theme="navy"]{background:#0a1628;}
+.theme-dot[data-theme="forest"]{background:#0d1a0f;}
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:4px;}
+.tab-btn{flex:1;background:none;border:none;border-radius:6px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:9px 4px;cursor:pointer;transition:.2s;}
+.tab-btn.active{background:var(--accent);color:#000;font-weight:700;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+/* CLOCK */
+.clock-bar{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 18px;margin-bottom:10px;}
+.clock-col{display:flex;flex-direction:column;}
+.clock-col.right{align-items:flex-end;}
+.clock-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
+.clock-now-time{font-family:'Share Tech Mono',monospace;font-size:22px;color:var(--text);letter-spacing:2px;}
+.clock-arrow{font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--border);}
+.clock-finish-time{font-family:'Share Tech Mono',monospace;font-size:26px;color:var(--green);letter-spacing:2px;}
+.clock-finish-time.empty{color:var(--muted);font-size:18px;}
+/* PAUSE */
+.pause-bar{display:none;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;}
+.pause-btn{flex:1;background:none;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;padding:9px 12px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.pause-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pause-btn.paused{border-color:var(--red);color:var(--red);}
+.pause-elapsed{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap;}
+.pause-elapsed.active{color:var(--red);}
+.total-paused{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;}
+.cancel-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 10px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.cancel-btn:hover{border-color:var(--red);color:var(--red);}
+/* START TIME BAR */
+.start-time-block{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.start-time-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+.start-time-block input[type="time"]{background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:18px;padding:6px 10px;outline:none;transition:border-color .15s;color-scheme:dark;flex:1;min-width:100px;}
+.start-time-block input[type="time"]:focus{border-color:var(--accent);}
+.start-time-now{background:var(--accent);border:none;border-radius:4px;color:#000;font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;cursor:pointer;transition:.15s;white-space:nowrap;font-weight:700;}
+.start-time-now:hover{opacity:.85;}
+.end-slip-btn{background:none;border:1px solid var(--green);border-radius:4px;color:var(--green);font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;cursor:pointer;transition:.15s;white-space:nowrap;font-weight:700;}
+.end-slip-btn:hover{background:var(--green);color:#000;}
+.start-time-clear{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 6px;transition:color .15s;}
+.start-time-clear:hover{color:var(--red);}
+/* ZONE LABEL in slip tab */
+.slip-zone-label{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:1px;padding:6px 14px;margin-bottom:8px;background:var(--panel);border:1px solid var(--blue);border-radius:6px;display:none;}
+.slip-zone-label.visible{display:block;}
+/* TRAIN */
+.train-block{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.train-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+.train-select{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:14px;padding:7px 9px;outline:none;transition:border-color .15s;appearance:none;cursor:pointer;}
+.train-select:focus{border-color:var(--accent);}
+.train-select option{background:var(--panel);}
+.save-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px 10px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.save-btn:hover{border-color:var(--green);color:var(--green);}
+.save-btn.saved{border-color:var(--green);color:var(--green);}
+/* INPUT ROW */
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.field-block{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:8px;}
+.field-block.hi{border-color:var(--accent);}
+.field-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+.field-block.hi .field-label{color:var(--accent);}
+.field-block input{flex:1;min-width:0;}
+.field-unit{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);}
+/* SLAGG */
+.slagg-label{display:flex;align-items:center;gap:14px;cursor:pointer;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:0;transition:border-color .2s;user-select:none;}
+.slagg-label:has(input:checked){border-color:var(--blue);}
+.slagg-label input[type=checkbox]{display:none;}
+.switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+.switch-track{position:absolute;inset:0;background:var(--border);border-radius:13px;transition:background .2s;}
+.slagg-label input:checked ~ .switch .switch-track{background:var(--blue);}
+.switch-thumb{position:absolute;width:20px;height:20px;top:3px;left:3px;background:var(--muted);border-radius:50%;transition:transform .2s,background .2s;}
+.slagg-label input:checked ~ .switch .switch-thumb{transform:translateX(20px);background:#fff;}
+.slagg-text{font-size:16px;font-weight:600;letter-spacing:1px;color:var(--text);text-transform:uppercase;}
+.slagg-result{display:none;margin-top:10px;background:var(--panel);border:1px solid var(--blue);border-radius:8px;padding:16px 18px;margin-bottom:16px;}
+.slagg-result.visible{display:block;}
+.slagg-result-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--blue);text-transform:uppercase;margin-bottom:8px;}
+.slagg-finish-time{font-family:'Share Tech Mono',monospace;font-size:32px;color:var(--blue);letter-spacing:2px;margin-bottom:8px;}
+.slagg-finish-time.empty{color:var(--muted);font-size:18px;}
+.slagg-detail{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);line-height:2;}
+.slagg-detail span{color:var(--blue);}
+.slagg-speed-row{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.slagg-speed-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+.slagg-speed-input{width:70px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:15px;padding:6px 8px;outline:none;transition:border-color .15s;-moz-appearance:textfield;text-align:center;}
+.slagg-speed-input::-webkit-outer-spin-button,.slagg-speed-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.slagg-speed-input:focus{border-color:var(--blue);}
+.slagg-speed-unit{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+.slagg-timer-block{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.slagg-timer-btn{width:100%;background:none;border:1px solid var(--blue);border-radius:6px;color:var(--blue);font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:9px;cursor:pointer;transition:.2s;}
+.slagg-timer-btn:hover{background:var(--blue);color:#000;}
+.slagg-timer-btn.running{border-color:var(--red);color:var(--red);}
+.slagg-timer-running{display:none;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--red);text-align:center;}
+.slagg-timer-running.visible{display:block;}
+.slagg-saved-time{display:none;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--green);text-align:center;}
+.slagg-saved-time.visible{display:block;}
+/* GPS */
+.gps-bar{display:none;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:16px;gap:12px;}
+.gps-bar.visible{display:flex;}
+.gps-bar.active{border-color:var(--green);}
+.gps-bar.measuring{border-color:var(--accent);}
+.gps-bar.error{border-color:var(--red);}
+.gps-col{display:flex;flex-direction:column;flex:1;}
+.gps-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
+.gps-speed{font-family:'Share Tech Mono',monospace;font-size:28px;color:var(--green);letter-spacing:1px;}
+.gps-speed.empty{color:var(--muted);font-size:18px;}
+.gps-unit{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px;}
+.gps-progress-wrap{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden;display:none;}
+.gps-bar.measuring .gps-progress-wrap{display:block;}
+.gps-progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;width:0%;}
+.gps-status{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--accent);margin-top:3px;display:none;}
+.gps-bar.measuring .gps-status{display:block;}
+.gps-stop-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 10px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.gps-stop-btn:hover{border-color:var(--red);color:var(--red);}
+.gps-start-btn{display:block;width:100%;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:9px;cursor:pointer;margin-bottom:10px;transition:.2s;}
+.gps-start-btn:hover{border-color:var(--green);color:var(--green);}
+/* PASSAGE ROWS */
+.row.selected{border-color:var(--accent);background:var(--input-bg);}
+.row.active-pass{border-color:var(--accent);background:#1c2010;}
+.row.active-pass .row-num{color:var(--accent);}
+.row.active-pass .start-pass-btn{border-color:var(--accent);color:var(--accent);}
+.use-speed-popup{display:none;grid-column:1/-1;margin-top:4px;}
+.row.selected .use-speed-popup{display:block;}
+.use-speed-btn{width:100%;background:none;border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:8px;cursor:pointer;transition:background .15s,color .15s;}
+.use-speed-btn:hover{background:var(--accent);color:#000;}
+.use-speed-btn:disabled{border-color:var(--border);color:var(--muted);cursor:default;}
+.use-speed-btn:disabled:hover{background:none;color:var(--muted);}
+.col-headers{display:grid;grid-template-columns:28px 1fr 90px 80px 32px;gap:6px;padding:0 10px 6px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.row{display:grid;grid-template-columns:28px 1fr 90px 80px 32px;grid-template-rows:auto auto;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px;transition:border-color .2s,background .2s;cursor:pointer;}
+.row:focus-within{border-color:var(--accent);}
+.row-num{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);text-align:center;}
+.row-result{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--green);text-align:right;white-space:nowrap;}
+.row-result.empty{color:var(--muted);font-size:11px;}
+.start-pass-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;padding:4px 6px;cursor:pointer;transition:.15s;white-space:nowrap;text-align:center;}
+.start-pass-btn:hover{border-color:var(--accent);color:var(--accent);}
+input[type="number"]{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:15px;padding:7px 9px;outline:none;transition:border-color .15s;-moz-appearance:textfield;}
+input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;}
+input[type="number"]:focus{border-color:var(--accent);}
+input[type="number"]::placeholder{color:var(--muted);font-size:12px;}
+.clear-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:13px;cursor:pointer;padding:5px 3px;width:100%;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.clear-btn:hover{border-color:var(--red);color:var(--red);}
+.add-row-btn{width:100%;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;margin-top:4px;transition:.2s;}
+.add-row-btn:hover{border-color:var(--accent);color:var(--accent);}
+/* TOTALS */
+.totals{margin-top:16px;background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:18px 20px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;}
+.total-block{flex:1 1 110px;}
+.total-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.total-value{font-family:'Share Tech Mono',monospace;font-size:22px;color:var(--accent);font-weight:bold;}
+.total-value.big{font-size:30px;}
+.divider-v{width:1px;height:40px;background:var(--border);flex:0 0 1px;}
+.reset-all{display:block;width:100%;margin-top:10px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;transition:.2s;}
+.reset-all:hover{border-color:var(--red);color:var(--red);}
+/* PLANNING */
+.plan-train-block{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.zone-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+.zone-card.merged-next{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent;margin-bottom:0;}
+.zone-merge-connector{background:var(--panel);border:1px solid var(--border);border-top:none;border-bottom:none;padding:8px 16px;margin-bottom:0;}
+.zone-card.merged-prev{border-top-left-radius:0;border-top-right-radius:0;border-top-color:transparent;margin-bottom:10px;}
+.zone-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.zone-title{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.zone-header-btns{display:flex;gap:6px;align-items:center;}
+.zone-delete{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;transition:color .15s;}
+.zone-delete:hover{color:var(--red);}
+.merge-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;padding:4px 8px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.merge-btn:hover{border-color:var(--blue);color:var(--blue);}
+.merge-btn.active{border-color:var(--blue);color:var(--blue);background:#0c1520;}
+.zone-km-row{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:10px;}
+.zone-sep{font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--muted);text-align:center;}
+.km-input-group{display:flex;align-items:center;gap:4px;}
+.km-input-group span{font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--muted);}
+.km-input{background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:15px;padding:7px 6px;outline:none;transition:border-color .15s;-moz-appearance:textfield;text-align:center;}
+.km-input::-webkit-outer-spin-button,.km-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.km-input:focus{border-color:var(--accent);}
+.km-input.wide{width:68px;}
+.km-input.narrow{width:56px;}
+/* Merge gap speed row */
+.merge-gap-row{display:flex;align-items:center;gap:8px;background:var(--input-bg);border-radius:6px;padding:8px 12px;margin-bottom:8px;}
+.merge-gap-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--blue);text-transform:uppercase;flex:1;}
+.merge-gap-info{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+.merge-speed-input{width:60px;background:var(--panel);border:1px solid var(--blue);border-radius:4px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:14px;padding:5px 6px;outline:none;-moz-appearance:textfield;text-align:center;}
+.merge-speed-input::-webkit-outer-spin-button,.merge-speed-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.merge-speed-unit{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);}
+.zone-slagg-label{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:10px;}
+.zone-slagg-label input[type=checkbox]{display:none;}
+.mini-switch{position:relative;width:36px;height:20px;flex-shrink:0;}
+.mini-track{position:absolute;inset:0;background:var(--border);border-radius:10px;transition:background .2s;}
+.zone-slagg-label input:checked ~ .mini-switch .mini-track{background:var(--blue);}
+.mini-thumb{position:absolute;width:14px;height:14px;top:3px;left:3px;background:var(--muted);border-radius:50%;transition:transform .2s,background .2s;}
+.zone-slagg-label input:checked ~ .mini-switch .mini-thumb{transform:translateX(16px);background:#fff;}
+.zone-slagg-text{font-size:13px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.zone-result{background:var(--input-bg);border-radius:6px;padding:10px 12px;margin-bottom:8px;}
+.zone-result:empty{display:none;}
+.zone-result-row{display:flex;justify-content:space-between;align-items:center;font-family:'Share Tech Mono',monospace;font-size:11px;margin-bottom:4px;}
+.zone-result-row:last-child{margin-bottom:0;}
+.zone-result-label{color:var(--muted);}
+.zone-result-value{color:var(--green);font-size:13px;}
+.zone-result-value.blue{color:var(--blue);}
+.zone-result-value.total{color:var(--accent);font-size:15px;font-weight:bold;}
+.zone-dist{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;}
+.zone-import-btn{width:100%;background:none;border:1px solid var(--accent);border-radius:5px;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:8px;cursor:pointer;transition:.2s;}
+.zone-import-btn:hover{background:var(--accent);color:#000;}
+.plan-totals{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:16px 18px;margin-top:8px;}
+.plan-totals-title{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:12px;}
+.plan-totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.add-zone-btn{width:100%;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;margin-top:4px;margin-bottom:12px;transition:.2s;}
+.add-zone-btn:hover{border-color:var(--accent);color:var(--accent);}
+.clear-plan-btn{display:block;width:100%;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;transition:.2s;margin-top:6px;}
+.clear-plan-btn:hover{border-color:var(--red);color:var(--red);}
+/* DONE ZONES */
+.done-zone-card{background:var(--panel);border:1px solid var(--green);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+.done-zone-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.done-zone-title{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--green);text-transform:uppercase;}
+.done-zone-km{font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text);margin-bottom:6px;}
+.done-zone-meta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px;}
+.done-zone-item{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);}
+.done-zone-item span{color:var(--green);}
+.done-shift-totals{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+.done-shift-title{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:10px;}
+.done-shift-grid{display:flex;flex-wrap:wrap;gap:14px;}
+.done-empty{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);text-align:center;padding:24px 0;letter-spacing:2px;}
+.clear-done-btn{display:block;width:100%;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;transition:.2s;margin-top:10px;}
+.clear-done-btn:hover{border-color:var(--red);color:var(--red);}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.pop{animation:pop .2s ease;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 1.5s infinite;}
+@media(max-width:480px){
+  .col-headers{grid-template-columns:24px 1fr 78px 64px 28px;font-size:9px;}
+  .row{grid-template-columns:24px 1fr 78px 64px 28px;}
+  .total-value.big{font-size:24px;}
+  .km-input.wide{width:56px;}
+  .km-input.narrow{width:46px;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="header-tag">// Rälsslipning</div>
+  <p class="subtitle" id="subtitle-text">Tidsberäkning per passage — sliptåg</p>
+  <div class="rail-line"></div>
+</header>
+<div class="top-bar">
+  <div class="lang-bar">
+    <button class="lang-btn active" id="lang-sv" onclick="setLang('sv')">SV</button>
+    <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="lang-it" onclick="setLang('it')">IT</button>
+  </div>
+  <div class="theme-bar">
+    <div class="theme-dot active" data-theme="dark" onclick="setTheme('dark')"></div>
+    <div class="theme-dot" data-theme="light" onclick="setTheme('light')"></div>
+    <div class="theme-dot" data-theme="navy" onclick="setTheme('navy')"></div>
+    <div class="theme-dot" data-theme="forest" onclick="setTheme('forest')"></div>
+  </div>
+</div>
+<div class="tabs">
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')" data-t="tabPlan">Planering</button>
+  <button class="tab-btn active" id="tab-slip" onclick="switchTab('slip')" data-t="tabSlip">Slipning</button>
+  <button class="tab-btn" id="tab-done" onclick="switchTab('done')" data-t="tabDone">Färdiga zoner</button>
+</div>
+
+<!-- ══ PLANERING ══ -->
+<div class="tab-content" id="content-plan">
+  <div class="plan-train-block">
+    <span class="train-label" data-t="train">Tåg</span>
+    <select class="train-select" id="plan-train-select" onchange="recalcPlan()">
+      <option value="" data-t="selectTrain">— Välj tåg —</option>
+      <option value="RR40MF-1">RR40MF-1</option>
+      <option value="RR64M-1">RR64M-1</option>
+      <option value="RR48M-8">RR48M-8</option>
+      <option value="RR48M-7">RR48M-7</option>
+    </select>
+  </div>
+  <div id="zones-container"></div>
+  <button class="add-zone-btn" id="add-zone-btn" onclick="addZone()" data-t="addZone">+ Lägg till zon</button>
+  <div class="plan-totals" id="plan-totals" style="display:none">
+    <div class="plan-totals-title" data-t="planSummary">Sammanfattning</div>
+    <div class="plan-totals-grid" id="plan-totals-grid"></div>
+  </div>
+  <button class="clear-plan-btn" onclick="clearPlan()" data-t="clearPlan">↺ Rensa planering</button>
+</div>
+
+<!-- ══ SLIPNING ══ -->
+<div class="tab-content active" id="content-slip">
+  <div class="clock-bar">
+    <div class="clock-col">
+      <span class="clock-label" data-t="currentTime">Nuvarande tid</span>
+      <span class="clock-now-time" id="clock-now">--:--:--</span>
+    </div>
+    <span class="clock-arrow">→</span>
+    <div class="clock-col right">
+      <span class="clock-label" data-t="estFinish">Beräknad klar (slipning)</span>
+      <span class="clock-finish-time empty" id="clock-finish">–</span>
+    </div>
+  </div>
+  <div class="pause-bar" id="pause-bar">
+    <button class="pause-btn" id="pause-btn" onclick="togglePause()">
+      <span id="pause-icon">⏸</span>
+      <span id="pause-label" data-t="pause">Pausa</span>
+    </button>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:1;">
+      <span class="pause-elapsed" id="pause-elapsed"></span>
+      <span class="total-paused" id="total-paused"></span>
+    </div>
+    <button class="cancel-btn" onclick="cancelSession()" data-t="cancelSession">✕ Avbryt</button>
+  </div>
+  <div class="start-time-block">
+    <span class="start-time-label" data-t="started">Startade</span>
+    <input type="time" id="start-time" oninput="onStartTimeChange()">
+    <button class="start-time-now" onclick="setCurrentTime()" data-t="useNow">Starta slipning</button>
+    <button class="end-slip-btn" onclick="endSlip()" data-t="endSlip">Avsluta zon</button>
+    <button class="start-time-clear" onclick="cancelSession()">✕</button>
+  </div>
+  <!-- Zone label shown when a zone is imported -->
+  <div class="slip-zone-label" id="slip-zone-label"></div>
+
+  <div class="train-block">
+    <span class="train-label" data-t="train">Tåg</span>
+    <select class="train-select" id="train-select" onchange="selectTrain()">
+      <option value="" data-t="selectTrain">— Välj tåg —</option>
+      <option value="RR40MF-1">RR40MF-1</option>
+      <option value="RR64M-1">RR64M-1</option>
+      <option value="RR48M-8">RR48M-8</option>
+      <option value="RR48M-7">RR48M-7</option>
+    </select>
+    <button class="save-btn" id="save-btn" onclick="saveProfile()" data-t="saveSpeeds">SPARA HASTIGHETER</button>
+  </div>
+  <div class="input-row">
+    <div class="field-block hi">
+      <span class="field-label" data-t="distance">Sträcka</span>
+      <input type="number" id="shared-meters" placeholder="t.ex. 1000" min="1" oninput="recalcAll()" inputmode="decimal">
+      <span class="field-unit">m</span>
+    </div>
+    <div class="field-block">
+      <span class="field-label" data-t="trainLength">Tåglängd</span>
+      <input type="number" id="train-length" placeholder="t.ex. 100" min="0" oninput="recalcAll()" inputmode="decimal">
+      <span class="field-unit">m</span>
+    </div>
+  </div>
+  <label class="slagg-label">
+    <input type="checkbox" id="slagg-toggle" onchange="recalcAll()">
+    <span class="switch"><span class="switch-track"></span><span class="switch-thumb"></span></span>
+    <span class="slagg-text" data-t="slaggning">Slaggning</span>
+  </label>
+  <div class="slagg-result" id="slagg-result">
+    <div class="slagg-result-label" data-t="estWithSlagg">Beräknad tid med slaggning</div>
+    <div class="slagg-finish-time empty" id="slagg-finish">–</div>
+    <div class="slagg-detail" id="slagg-detail"></div>
+    <div class="slagg-speed-row">
+      <span class="slagg-speed-label" data-t="slaggSpeed">min/km</span>
+      <input type="number" class="slagg-speed-input" id="slagg-speed-input" placeholder="20" min="1" step="0.1" oninput="onSlaggSpeedInput()" inputmode="decimal">
+      <span class="slagg-speed-unit">min/km</span>
+    </div>
+    <div class="slagg-timer-block">
+      <button class="slagg-timer-btn" id="slagg-timer-btn" onclick="toggleSlaggTimer()" data-t="startSlaggMeasure">⏱ Mät slaggningstid</button>
+      <div class="slagg-timer-running" id="slagg-timer-running"></div>
+      <div class="slagg-saved-time" id="slagg-saved-time"></div>
+    </div>
+  </div>
+  <div class="gps-bar" id="gps-bar">
+    <div class="gps-col">
+      <span class="gps-label" data-t="gpsSpeed">GPS-hastighet</span>
+      <span class="gps-speed empty" id="gps-speed">–</span>
+      <span class="gps-unit">km/h</span>
+      <div class="gps-progress-wrap"><div class="gps-progress-bar" id="gps-progress"></div></div>
+      <span class="gps-status" id="gps-status"></span>
+    </div>
+    <button class="gps-stop-btn" onclick="stopGPS()" data-t="stopGps">■ Stäng av GPS</button>
+  </div>
+  <button class="gps-start-btn" id="gps-start-btn" onclick="startGPS()" data-t="activateGps">⊕ Aktivera GPS-hastighet</button>
+  <div class="col-headers">
+    <span>#</span>
+    <span data-t="speed">Hastighet (km/h)</span>
+    <span data-t="time">Tid</span>
+    <span></span>
+    <span></span>
+  </div>
+  <div id="rows-container"></div>
+  <button class="add-row-btn" id="add-row-btn" onclick="addRow()" data-t="addPassage">+ Lägg till passage</button>
+  <div class="totals">
+    <div class="total-block">
+      <div class="total-label" data-t="totalDist">Totalt avstånd</div>
+      <div class="total-value" id="total-meters">0 m</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="total-block">
+      <div class="total-label" data-t="passages">Passager</div>
+      <div class="total-value" id="total-count">0</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="total-block">
+      <div class="total-label" data-t="totalTime">Total tid (slipning)</div>
+      <div class="total-value big" id="total-time">–</div>
+    </div>
+  </div>
+  <button class="reset-all" onclick="resetAll()" data-t="clearAll">↺ Rensa alla</button>
+</div>
+
+<!-- ══ FÄRDIGA ZONER ══ -->
+<div class="tab-content" id="content-done">
+  <div id="done-shift-totals-block" style="display:none" class="done-shift-totals">
+    <div class="done-shift-title" data-t="shiftTotal">Skiftets totaler</div>
+    <div class="done-shift-grid" id="done-shift-grid"></div>
+  </div>
+  <div id="done-zones-container">
+    <div class="done-empty" id="done-empty" data-t="noZonesDone">Inga avslutade zoner ännu</div>
+  </div>
+  <button class="clear-done-btn" onclick="clearDone()" data-t="clearDone">↺ Rensa färdiga zoner</button>
+</div>
+</div>
+
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+function generateIcon(size){
+  const c=document.createElement('canvas');c.width=c.height=size;
+  const x=c.getContext('2d');
+  x.fillStyle='#0d0f14';x.fillRect(0,0,size,size);
+  x.strokeStyle='#f0a500';x.lineWidth=size*.06;
+  x.beginPath();x.moveTo(size*.1,size*.42);x.lineTo(size*.9,size*.42);x.stroke();
+  x.beginPath();x.moveTo(size*.1,size*.58);x.lineTo(size*.9,size*.58);x.stroke();
+  x.strokeStyle='#5a6070';x.lineWidth=size*.04;
+  [.2,.35,.5,.65,.8].forEach(p=>{x.beginPath();x.moveTo(size*p,size*.35);x.lineTo(size*p,size*.65);x.stroke();});
+  return c.toDataURL('image/png');
+}
+const iconLink=document.querySelector('link[rel="apple-touch-icon"]');
+if(iconLink) iconLink.href=generateIcon(192);
+
+const T={
+sv:{
+  subtitle:'Tidsberäkning per passage — sliptåg',
+  tabPlan:'Planering',tabSlip:'Slipning',tabDone:'Färdiga zoner',
+  currentTime:'Nuvarande tid',estFinish:'Beräknad klar (slipning)',
+  started:'Startade',train:'Tåg',selectTrain:'— Välj tåg —',
+  saveSpeeds:'SPARA HASTIGHETER',savedOk:'✓ SPARAT',
+  distance:'Sträcka',trainLength:'Tåglängd',
+  slaggning:'Slaggning',estWithSlagg:'Beräknad tid med slaggning',
+  slaggSpeed:'Slagghastighet',
+  startSlaggMeasure:'⏱ Mät slaggningstid',stopSlaggMeasure:'⏹ Stoppa mätning',
+  slaggMeasuring:'Mäter slaggningstid…',
+  slaggSaved:'Sparad: {time} ({minkm} min/km)',
+  gpsSpeed:'GPS-hastighet',stopGps:'■ Stäng av GPS',activateGps:'⊕ Aktivera GPS-hastighet',
+  speed:'Hastighet (km/h)',time:'Tid',addPassage:'+ Lägg till passage',
+  totalDist:'Totalt avstånd',passages:'Passager',totalTime:'Total tid (slipning)',
+  clearAll:'↺ Rensa alla',
+  pause:'Pausa',resume:'Fortsätt',pausedFor:'Pausad: ',totalPaused:'Tot. paus: ',
+  cancelSession:'✕ Avbryt',endSlip:'Avsluta zon',useNow:'Starta slipning',
+  measuring:'Mäter…',stable:'Stabil!',useSpeed:'Använd',waitingGps:'Väntar på GPS…',gpsError:'GPS-fel',
+  passLabel:'Pass',slagging:'Slaggning',trainWaits:'Tåget väntar på slaggplockarna',
+  addZone:'+ Lägg till zon',planSummary:'Sammanfattning',clearPlan:'↺ Rensa planering',
+  zone:'Zon',planSlipTime:'Sliptid',planSlaggTime:'Slaggningstid',planTotalTime:'Total tid',planDist:'Sträcka',
+  noTrain:'Välj ett tåg för att beräkna',noSpeeds:'Inga hastigheter sparade',
+  importToSlip:'→ Importera till Slipning',importDone:'✓ Importerat!',importNoZone:'Fyll i sträcka först',
+  mergeWith:'⇔ Slå ihop med nästa',unmerge:'✕ Dela upp',
+  mergeGap:'Förflyttning',mergeSpeed:'km/h förflyttning',
+  noZonesDone:'Inga avslutade zoner ännu',clearDone:'↺ Rensa färdiga zoner',
+  shiftTotal:'Skiftets totaler',shiftMeters:'Totalt slipade meter',shiftTime:'Total tid',
+  doneZone:'Zon',doneTime:'Faktisk tid',startPassBtn:'▶ Starta zon',
+},
+en:{
+  subtitle:'Time calculation per pass — rail grinding train',
+  tabPlan:'Planning',tabSlip:'Grinding',tabDone:'Completed zones',
+  currentTime:'Current time',estFinish:'Est. finish (grinding)',
+  started:'Started',train:'Train',selectTrain:'— Select train —',
+  saveSpeeds:'SAVE SPEEDS',savedOk:'✓ SAVED',
+  distance:'Distance',trainLength:'Train length',
+  slaggning:'Slag collection',estWithSlagg:'Est. time with slag collection',
+  slaggSpeed:'Slag speed',
+  startSlaggMeasure:'⏱ Measure slag time',stopSlaggMeasure:'⏹ Stop measurement',
+  slaggMeasuring:'Measuring slag time…',
+  slaggSaved:'Saved: {time} ({minkm} min/km)',
+  gpsSpeed:'GPS speed',stopGps:'■ Disable GPS',activateGps:'⊕ Enable GPS speed',
+  speed:'Speed (km/h)',time:'Time',addPassage:'+ Add pass',
+  totalDist:'Total distance',passages:'Passes',totalTime:'Total time (grinding)',
+  clearAll:'↺ Clear all',
+  pause:'Pause',resume:'Resume',pausedFor:'Paused: ',totalPaused:'Tot. pause: ',
+  cancelSession:'✕ Cancel',endSlip:'End zone',useNow:'Start grinding',
+  measuring:'Measuring…',stable:'Stable!',useSpeed:'Use',waitingGps:'Waiting for GPS…',gpsError:'GPS error',
+  passLabel:'Pass',slagging:'Slag collection',trainWaits:'Train waits for slag crew',
+  addZone:'+ Add zone',planSummary:'Summary',clearPlan:'↺ Clear planning',
+  zone:'Zone',planSlipTime:'Grinding time',planSlaggTime:'Slag time',planTotalTime:'Total time',planDist:'Distance',
+  noTrain:'Select a train to calculate',noSpeeds:'No speeds saved',
+  importToSlip:'→ Import to Grinding',importDone:'✓ Imported!',importNoZone:'Fill in distance first',
+  mergeWith:'⇔ Merge with next',unmerge:'✕ Split',
+  mergeGap:'Transit',mergeSpeed:'km/h transit',
+  noZonesDone:'No completed zones yet',clearDone:'↺ Clear completed zones',
+  shiftTotal:'Shift totals',shiftMeters:'Total ground meters',shiftTime:'Total time',
+  doneZone:'Zone',doneTime:'Actual time',startPassBtn:'▶ Start zone',
+},
+it:{
+  subtitle:'Calcolo tempi per passata — treno rettificatore',
+  tabPlan:'Pianificazione',tabSlip:'Rettifica',tabDone:'Zone completate',
+  currentTime:'Ora attuale',estFinish:'Fine prevista (rettifica)',
+  started:'Iniziato',train:'Treno',selectTrain:'— Seleziona treno —',
+  saveSpeeds:'SALVA VELOCITÀ',savedOk:'✓ SALVATO',
+  distance:'Distanza',trainLength:'Lunghezza treno',
+  slaggning:'Raccolta scorie',estWithSlagg:'Tempo previsto con raccolta scorie',
+  slaggSpeed:'Velocità scorie',
+  startSlaggMeasure:'⏱ Misura tempo scorie',stopSlaggMeasure:'⏹ Ferma misurazione',
+  slaggMeasuring:'Misurazione in corso…',
+  slaggSaved:'Salvato: {time} ({minkm} min/km)',
+  gpsSpeed:'Velocità GPS',stopGps:'■ Disattiva GPS',activateGps:'⊕ Attiva velocità GPS',
+  speed:'Velocità (km/h)',time:'Tempo',addPassage:'+ Aggiungi passata',
+  totalDist:'Distanza totale',passages:'Passate',totalTime:'Tempo totale (rettifica)',
+  clearAll:'↺ Azzera tutto',
+  pause:'Pausa',resume:'Riprendi',pausedFor:'In pausa: ',totalPaused:'Tot. pausa: ',
+  cancelSession:'✕ Annulla',endSlip:'Termina zona',useNow:'Avvia rettifica',
+  measuring:'Misurazione…',stable:'Stabile!',useSpeed:'Usa',waitingGps:'In attesa GPS…',gpsError:'Errore GPS',
+  passLabel:'Passata',slagging:'Raccolta scorie',trainWaits:'Il treno attende gli operatori',
+  addZone:'+ Aggiungi zona',planSummary:'Riepilogo',clearPlan:'↺ Azzera pianificazione',
+  zone:'Zona',planSlipTime:'Tempo rettifica',planSlaggTime:'Tempo scorie',planTotalTime:'Tempo totale',planDist:'Distanza',
+  noTrain:'Seleziona un treno per calcolare',noSpeeds:'Nessuna velocità salvata',
+  importToSlip:'→ Importa in Rettifica',importDone:'✓ Importato!',importNoZone:'Inserisci distanza prima',
+  mergeWith:'⇔ Unisci con prossima',unmerge:'✕ Dividi',
+  mergeGap:'Transito',mergeSpeed:'km/h transito',
+  noZonesDone:'Nessuna zona completata',clearDone:'↺ Azzera zone completate',
+  shiftTotal:'Totali turno',shiftMeters:'Totale metri rettificati',shiftTime:'Tempo totale',
+  doneZone:'Zona',doneTime:'Tempo effettivo',startPassBtn:'▶ Avvia zona',
+}};
+
+let lang='sv';
+function t(key){return(T[lang]&&T[lang][key])||T.sv[key]||key;}
+function setLang(l){lang=l;try{localStorage.setItem('appLang',l);}catch(e){}
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.id==='lang-'+l));
+  applyTranslations();recalcAll();recalcPlan();}
+function applyTranslations(){
+  document.getElementById('subtitle-text').textContent=t('subtitle');
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const k=el.getAttribute('data-t');
+    if(['BUTTON','SPAN','DIV','OPTION','P'].includes(el.tagName)) el.textContent=t(k);
+  });
+  const sb=document.getElementById('save-btn');
+  if(sb&&!sb.classList.contains('saved')) sb.textContent=t('saveSpeeds');
+  updateSlaggTimerUI();
+  document.querySelectorAll('.use-speed-btn').forEach(b=>{if(b.disabled) b.textContent=t('waitingGps');});
+  document.querySelectorAll('.start-pass-btn').forEach(b=>b.textContent=t('startPassBtn'));
+  updatePauseUI();renderDoneZones();
+}
+function setTheme(th){
+  document.documentElement.setAttribute('data-theme',th==='dark'?'':th);
+  document.querySelectorAll('.theme-dot').forEach(d=>d.classList.toggle('active',d.getAttribute('data-theme')===th));
+  try{localStorage.setItem('appTheme',th);}catch(e){}
+}
+function switchTab(tab){
+  ['plan','slip','done'].forEach(id=>{
+    document.getElementById('tab-'+id).classList.toggle('active',id===tab);
+    document.getElementById('content-'+id).classList.toggle('active',id===tab);
+  });
+}
+
+// ── STATE ──
+let rowCount=0,MAX_ROWS=10,slipMinutesGlobal=0;
+let isPaused=false,pauseStartTime=null,totalPausedMs=0,pauseTickInterval=null;
+let slaggTimerRunning=false,slaggTimerStart=null,slaggTimerInterval=null;
+let gpsWatchId=null,currentGpsSpeed=null,selectedRowId=null;
+let gpsSamples=[],measuringRowId=null,measureTimeout=null;
+let activePassNum=null,importedZoneId=null,importedZoneLabel=null;
+const GPS_THRESHOLD=0.2,GPS_MIN=5,GPS_MAX_SEC=15;
+
+// ── HELPERS ──
+function padZ(n){return String(n).padStart(2,'0');}
+function fmt(m){
+  if(!isFinite(m)||m<=0) return '–';
+  const h=Math.floor(m/60),min=Math.floor(m%60),s=Math.round((m*60)%60);
+  if(h>0) return h+'h '+min+'m '+s+'s';
+  if(min>0) return min+'m '+s+'s';
+  return s+'s';
+}
+function fmtMs(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),sc=s%60;return m>0?m+'m '+sc+'s':sc+'s';}
+function finishTime(totalMins){
+  if(!totalMins||totalMins<=0) return null;
+  const sv=document.getElementById('start-time').value;
+  let base=new Date();
+  if(sv){const[h,m]=sv.split(':').map(Number);base=new Date();base.setHours(h,m,0,0);}
+  const off=totalPausedMs+(isPaused&&pauseStartTime?Date.now()-pauseStartTime.getTime():0);
+  return new Date(base.getTime()+totalMins*60000+off);
+}
+function clockStr(m){const d=finishTime(m);if(!d)return null;return padZ(d.getHours())+':'+padZ(d.getMinutes());}
+function getMeters(){return parseFloat(document.getElementById('shared-meters').value)||0;}
+function getTrainLen(){return parseFloat(document.getElementById('train-length').value)||0;}
+function getEff(){return getMeters()+getTrainLen();}
+function slaggOn(){return document.getElementById('slagg-toggle').checked;}
+
+// ── START TIME ──
+function onStartTimeChange(){recalcAll();updatePauseBarVisibility();}
+function updatePauseBarVisibility(){document.getElementById('pause-bar').style.display=document.getElementById('start-time').value?'flex':'none';}
+function setCurrentTime(){
+  const now=new Date();
+  document.getElementById('start-time').value=padZ(now.getHours())+':'+padZ(now.getMinutes());
+  recalcAll();updatePauseBarVisibility();
+}
+function cancelSession(){
+  if(isPaused){clearInterval(pauseTickInterval);pauseTickInterval=null;isPaused=false;pauseStartTime=null;}
+  totalPausedMs=0;document.getElementById('start-time').value='';
+  updatePauseBarVisibility();updatePauseUI();updatePauseDisplay();recalcAll();
+}
+
+// ── PAUSE ──
+function togglePause(){
+  if(!isPaused){isPaused=true;pauseStartTime=new Date();pauseTickInterval=setInterval(updatePauseDisplay,1000);}
+  else{totalPausedMs+=Date.now()-pauseStartTime.getTime();isPaused=false;pauseStartTime=null;clearInterval(pauseTickInterval);pauseTickInterval=null;recalcAll();}
+  updatePauseUI();updatePauseDisplay();
+}
+function updatePauseUI(){
+  const btn=document.getElementById('pause-btn'),icon=document.getElementById('pause-icon'),lbl=document.getElementById('pause-label');
+  if(isPaused){btn.classList.add('paused');icon.textContent='▶';lbl.textContent=t('resume');lbl.classList.add('pulse');}
+  else{btn.classList.remove('paused');icon.textContent='⏸';lbl.textContent=t('pause');lbl.classList.remove('pulse');}
+}
+function updatePauseDisplay(){
+  const elEl=document.getElementById('pause-elapsed'),totEl=document.getElementById('total-paused');
+  if(isPaused&&pauseStartTime){elEl.textContent=t('pausedFor')+fmtMs(Date.now()-pauseStartTime.getTime());elEl.classList.add('active');}
+  else{elEl.textContent='';elEl.classList.remove('active');}
+  totEl.textContent=totalPausedMs>0?t('totalPaused')+fmtMs(totalPausedMs):'';
+}
+
+// ── CLOCK ──
+function tickClock(){
+  const now=new Date();
+  document.getElementById('clock-now').textContent=padZ(now.getHours())+':'+padZ(now.getMinutes())+':'+padZ(now.getSeconds());
+  const fin=document.getElementById('clock-finish');
+  const cs=clockStr(slipMinutesGlobal);
+  if(cs){fin.textContent=cs;fin.classList.remove('empty');}
+  else{fin.textContent='–';fin.classList.add('empty');}
+}
+setInterval(tickClock,1000);tickClock();
+
+// ── PROFILES ──
+const TRAIN_DEFAULTS={'RR40MF-1':{length:100,speeds:[5.5,7,6,7]},'RR64M-1':{length:133,speeds:[0,0,0]},'RR48M-8':{length:113,speeds:[0,0,0]},'RR48M-7':{length:113,speeds:[0,0,0,0]}};
+function loadProfiles(){try{const r=localStorage.getItem('trainProfiles');return r?JSON.parse(r):{};}catch(e){return{};}}
+function saveProfiles(p){try{localStorage.setItem('trainProfiles',JSON.stringify(p));}catch(e){}}
+function getProfile(id){
+  const saved=loadProfiles()[id],def=TRAIN_DEFAULTS[id]||{length:0,speeds:[]};
+  if(!saved) return def;
+  return{length:saved.length>0?saved.length:def.length,speeds:(saved.speeds&&saved.speeds.length>0)?saved.speeds:def.speeds,slaggMinkm:saved.slaggMinkm};
+}
+function selectTrain(){
+  const trainId=document.getElementById('train-select').value;if(!trainId) return;
+  const profile=getProfile(trainId);const speeds=profile.speeds||[];
+  document.getElementById('train-length').value=profile.length||'';
+  document.getElementById('rows-container').innerHTML='';
+  rowCount=0;document.getElementById('add-row-btn').style.display='';
+  for(let i=0;i<Math.max(speeds.length,1);i++) addRowSilent();
+  speeds.forEach((spd,i)=>{const inp=document.getElementById('k-'+(i+1));if(inp&&spd) inp.value=spd;});
+  loadSlaggSpeedInput();recalcAll();flashSaveBtn(false);
+}
+function saveProfile(){
+  const trainId=document.getElementById('train-select').value;if(!trainId) return;
+  const length=parseFloat(document.getElementById('train-length').value)||0;
+  const speeds=[];
+  document.querySelectorAll('.passage-row').forEach(row=>{speeds.push(parseFloat(document.getElementById('k-'+row.dataset.id)?.value)||'');});
+  while(speeds.length&&!speeds[speeds.length-1]) speeds.pop();
+  const profiles=loadProfiles();if(!profiles[trainId]) profiles[trainId]={};
+  profiles[trainId].length=length;profiles[trainId].speeds=speeds;
+  saveProfiles(profiles);flashSaveBtn(true);
+}
+function flashSaveBtn(saved){
+  const btn=document.getElementById('save-btn');
+  if(saved){btn.textContent=t('savedOk');btn.classList.add('saved');setTimeout(()=>{btn.textContent=t('saveSpeeds');btn.classList.remove('saved');},2000);}
+  else{btn.textContent=t('saveSpeeds');btn.classList.remove('saved');}
+}
+
+// ── SLAGG ──
+function getSlaggMinPerKm(){
+  const manVal=parseFloat(document.getElementById('slagg-speed-input').value);if(manVal>0) return manVal;
+  const trainId=document.getElementById('train-select').value||'__default__';
+  const saved=loadProfiles()[trainId]?.slaggMinkm;if(saved&&saved>0) return saved;
+  return 20;
+}
+function getSlaggMins(effMeters){return(effMeters/1000)*getSlaggMinPerKm();}
+function getSlaggSource(effMeters){const m=getSlaggMinPerKm();return(effMeters/1000).toFixed(2)+' km × '+m.toFixed(1)+' min/km';}
+function onSlaggSpeedInput(){
+  const trainId=document.getElementById('train-select').value||'__default__';
+  const val=parseFloat(document.getElementById('slagg-speed-input').value)||0;
+  const profiles=loadProfiles();if(!profiles[trainId]) profiles[trainId]={};
+  if(val>0) profiles[trainId].slaggMinkm=val;else delete profiles[trainId].slaggMinkm;
+  saveProfiles(profiles);recalcAll();recalcPlan();
+}
+function loadSlaggSpeedInput(){
+  const trainId=document.getElementById('train-select').value||'__default__';
+  const saved=loadProfiles()[trainId]?.slaggMinkm;
+  document.getElementById('slagg-speed-input').value=saved&&saved>0?saved:'';
+}
+function toggleSlaggTimer(){
+  if(!slaggTimerRunning){
+    slaggTimerRunning=true;slaggTimerStart=Date.now();
+    document.getElementById('slagg-timer-btn').classList.add('running');
+    document.getElementById('slagg-timer-btn').textContent=t('stopSlaggMeasure');
+    const runEl=document.getElementById('slagg-timer-running');runEl.classList.add('visible','pulse');
+    slaggTimerInterval=setInterval(()=>{runEl.textContent=t('slaggMeasuring')+' '+fmtMs(Date.now()-slaggTimerStart);},1000);
+  } else {
+    const elapsedMins=(Date.now()-slaggTimerStart)/60000;
+    clearInterval(slaggTimerInterval);slaggTimerRunning=false;slaggTimerStart=null;
+    document.getElementById('slagg-timer-btn').classList.remove('running');
+    document.getElementById('slagg-timer-btn').textContent=t('startSlaggMeasure');
+    document.getElementById('slagg-timer-running').classList.remove('visible','pulse');
+    document.getElementById('slagg-timer-running').textContent='';
+    const eff=getEff(),minkm=eff>0?elapsedMins/(eff/1000):20;
+    const trainId=document.getElementById('train-select').value||'__default__';
+    const profiles=loadProfiles();if(!profiles[trainId]) profiles[trainId]={};
+    profiles[trainId].slaggMinkm=minkm;saveProfiles(profiles);
+    document.getElementById('slagg-speed-input').value=minkm.toFixed(1);
+    const savedEl=document.getElementById('slagg-saved-time');savedEl.classList.add('visible');
+    savedEl.textContent=t('slaggSaved').replace('{time}',fmtMs(elapsedMins*60000)).replace('{minkm}',minkm.toFixed(1));
+    recalcAll();recalcPlan();
+  }
+}
+function updateSlaggTimerUI(){const btn=document.getElementById('slagg-timer-btn');if(btn) btn.textContent=slaggTimerRunning?t('stopSlaggMeasure'):t('startSlaggMeasure');}
+
+// ── STARTA PASSAGE ──
+function startPassage(passNum){
+  const eff=getEff();if(eff<=0) return;
+  document.querySelectorAll('.passage-row').forEach(row=>{row.classList.toggle('active-pass',parseInt(row.dataset.id)===passNum);});
+  activePassNum=passNum;
+  const rows=[];
+  document.querySelectorAll('.passage-row').forEach(row=>{
+    const id=row.dataset.id,k=parseFloat(document.getElementById('k-'+id)?.value)||0;
+    if(k>0) rows.push({mins:(eff/1000)/k*60,num:parseInt(id)});
+  });
+  const remaining=rows.filter(r=>r.num>=passNum);
+  let remainingMins=0;remaining.forEach(r=>remainingMins+=r.mins);
+  if(slaggOn()&&remaining.length>0){
+    const beforeLast=remaining.slice(0,-1);let bm=0;beforeLast.forEach(r=>bm+=r.mins);
+    remainingMins=bm+getSlaggMins(eff);
+  }
+  const now=new Date();
+  document.getElementById('start-time').value=padZ(now.getHours())+':'+padZ(now.getMinutes());
+  totalPausedMs=0;
+  if(isPaused){clearInterval(pauseTickInterval);pauseTickInterval=null;isPaused=false;pauseStartTime=null;updatePauseUI();}
+  updatePauseDisplay();updatePauseBarVisibility();
+  slipMinutesGlobal=remainingMins;
+}
+
+// ── RECALC ──
+function recalcAll(){
+  const eff=getEff();
+  document.querySelectorAll('.passage-row').forEach(row=>{
+    const id=row.dataset.id,k=parseFloat(document.getElementById('k-'+id)?.value)||0;
+    const res=document.getElementById('r-'+id);
+    if(eff>0&&k>0){res.textContent=fmt((eff/1000)/k*60);res.classList.remove('empty');}
+    else{res.textContent='–';res.classList.add('empty');}
+  });
+  const rows=[];
+  document.querySelectorAll('.passage-row').forEach(row=>{
+    const id=row.dataset.id,k=parseFloat(document.getElementById('k-'+id)?.value)||0;
+    if(eff>0&&k>0) rows.push({id,mins:(eff/1000)/k*60});
+  });
+  const count=rows.length;
+  // Only update slipMinutesGlobal if not in passage-start override mode
+  if(activePassNum===null){
+    let slipMins=0;rows.forEach(r=>slipMins+=r.mins);slipMinutesGlobal=slipMins;
+  }
+  const td=eff>0&&count>0?eff*count:0;
+  document.getElementById('total-meters').textContent=td>0?td.toLocaleString('sv-SE')+' m':'0 m';
+  document.getElementById('total-count').textContent=count;
+  const tt=document.getElementById('total-time');
+  let fullSlipMins=0;rows.forEach(r=>fullSlipMins+=r.mins);
+  tt.textContent=count>0?fmt(fullSlipMins):'–';
+  if(count>0){tt.classList.add('pop');setTimeout(()=>tt.classList.remove('pop'),200);}
+
+  const slaggBox=document.getElementById('slagg-result');
+  if(!slaggOn()){slaggBox.classList.remove('visible');return;}
+  slaggBox.classList.add('visible');
+  const slaggFin=document.getElementById('slagg-finish'),slaggDet=document.getElementById('slagg-detail');
+  if(count<1){slaggFin.textContent='–';slaggFin.classList.add('empty');slaggDet.innerHTML='';return;}
+  const lastRow=rows[count-1],passesBeforeLast=rows.slice(0,count-1);
+  let beforeMins=0;passesBeforeLast.forEach(r=>beforeMins+=r.mins);
+  const slaggMins=getSlaggMins(eff),vantar=Math.max(0,slaggMins-lastRow.mins);
+  const totalWithSlagg=beforeMins+slaggMins;
+  // Update clock if slagg on and no passage override
+  if(activePassNum===null) slipMinutesGlobal=totalWithSlagg;
+  const cs=clockStr(totalWithSlagg);
+  if(cs){slaggFin.textContent=cs;slaggFin.classList.remove('empty');}
+  else{slaggFin.textContent='–';slaggFin.classList.add('empty');}
+  let det='';
+  if(count>1) det+=t('passLabel')+' 1–'+(count-1)+': <span>'+fmt(beforeMins)+'</span><br>';
+  det+=t('slagging')+' '+getSlaggSource(eff)+': <span>'+fmt(slaggMins)+'</span><br>';
+  det+=t('trainWaits')+': <span>'+fmt(vantar)+'</span>';
+  slaggDet.innerHTML=det;
+}
+
+// ── ROWS ──
+function buildRowHTML(id){
+  return '<span class="row-num">'+id+'</span>'+
+    '<input type="number" id="k-'+id+'" placeholder="t.ex. 8" min="0.1" step="0.1" oninput="recalcAll()" inputmode="decimal" onclick="event.stopPropagation()">'+
+    '<span class="row-result empty" id="r-'+id+'">–</span>'+
+    '<button class="start-pass-btn" onclick="event.stopPropagation();startPassage('+id+')">'+t('startPassBtn')+'</button>'+
+    '<button class="clear-btn" onclick="event.stopPropagation();clearRow('+id+')">✕</button>'+
+    '<div class="use-speed-popup"><button class="use-speed-btn" id="use-speed-'+id+'" onclick="event.stopPropagation();useCurrentSpeed('+id+')" disabled>'+t('waitingGps')+'</button></div>';
+}
+function addRow(){
+  if(rowCount>=MAX_ROWS) return;rowCount++;const id=rowCount;
+  const row=document.createElement('div');row.className='row passage-row';row.dataset.id=id;
+  row.onclick=()=>{if(gpsWatchId!==null) selectRow(id);};
+  row.innerHTML=buildRowHTML(id);
+  document.getElementById('rows-container').appendChild(row);
+  if(rowCount>=MAX_ROWS) document.getElementById('add-row-btn').style.display='none';
+  setTimeout(()=>document.getElementById('k-'+id)?.focus(),50);recalcAll();
+}
+function addRowSilent(){
+  if(rowCount>=MAX_ROWS) return;rowCount++;const id=rowCount;
+  const row=document.createElement('div');row.className='row passage-row';row.dataset.id=id;
+  row.onclick=()=>{if(gpsWatchId!==null) selectRow(id);};
+  row.innerHTML=buildRowHTML(id);
+  document.getElementById('rows-container').appendChild(row);
+  if(rowCount>=MAX_ROWS) document.getElementById('add-row-btn').style.display='none';
+}
+function clearRow(id){
+  const k=document.getElementById('k-'+id),r=document.getElementById('r-'+id);
+  if(k) k.value='';if(r){r.textContent='–';r.classList.add('empty');}
+  recalcAll();
+}
+function resetAll(){
+  document.getElementById('shared-meters').value='';document.getElementById('train-length').value='';
+  document.getElementById('train-select').value='';
+  document.getElementById('slagg-toggle').checked=false;
+  document.getElementById('slagg-result').classList.remove('visible');
+  document.getElementById('slagg-speed-input').value='';
+  document.getElementById('rows-container').innerHTML='';
+  rowCount=0;slipMinutesGlobal=0;importedZoneId=null;importedZoneLabel=null;activePassNum=null;
+  totalPausedMs=0;isPaused=false;pauseStartTime=null;
+  if(pauseTickInterval){clearInterval(pauseTickInterval);pauseTickInterval=null;}
+  document.getElementById('add-row-btn').style.display='';
+  document.getElementById('slip-zone-label').classList.remove('visible');
+  document.getElementById('slip-zone-label').textContent='';
+  cancelMeasure();updatePauseUI();updatePauseDisplay();
+  document.getElementById('start-time').value='';updatePauseBarVisibility();
+  recalcAll();addRow();addRow();addRow();
+}
+
+// ── END SLIP ──
+function endSlip(){
+  const startVal=document.getElementById('start-time').value;
+  if(!startVal) return;
+  const[h,m]=startVal.split(':').map(Number);
+  const startMs=new Date();startMs.setHours(h,m,0,0);
+  const elapsedMs=Date.now()-startMs.getTime()-totalPausedMs-(isPaused&&pauseStartTime?Date.now()-pauseStartTime.getTime():0);
+  const elapsedMins=Math.max(0,elapsedMs/60000);
+  const trainId=document.getElementById('train-select').value;
+  const meters=getMeters();const eff=getEff();
+  const withSlagg=slaggOn();const slaggMins=withSlagg?getSlaggMins(eff):0;
+  const entry={id:Date.now(),trainId,meters,elapsedMins,withSlagg,slaggMins,label:importedZoneLabel};
+  const done=loadDone();done.push(entry);saveDone(done);
+  if(importedZoneId!==null){
+    document.getElementById('zone-card-'+importedZoneId)?.remove();
+    savePlanState();recalcPlanTotals();
+  }
+  resetAll();renderDoneZones();switchTab('done');
+}
+
+// ── GPS ──
+function startGPS(){
+  if(!navigator.geolocation){alert('GPS stöds inte.');return;}
+  document.getElementById('gps-start-btn').style.display='none';
+  document.getElementById('gps-bar').classList.add('visible');
+  gpsWatchId=navigator.geolocation.watchPosition(
+    pos=>{
+      const kmh=(pos.coords.speed||0)*3.6;currentGpsSpeed=kmh;
+      document.getElementById('gps-speed').textContent=kmh.toFixed(1);
+      document.getElementById('gps-speed').classList.remove('empty');
+      document.getElementById('gps-bar').classList.add('active');document.getElementById('gps-bar').classList.remove('error');
+      if(measuringRowId!==null) addGpsSample(kmh);updateUseSpeedBtn();
+    },
+    ()=>{document.getElementById('gps-bar').classList.add('error');document.getElementById('gps-speed').textContent=t('gpsError');},
+    {enableHighAccuracy:true,maximumAge:500,timeout:10000}
+  );
+}
+function stopGPS(){
+  if(gpsWatchId!==null) navigator.geolocation.clearWatch(gpsWatchId);
+  gpsWatchId=null;currentGpsSpeed=null;cancelMeasure();
+  document.getElementById('gps-bar').classList.remove('visible','active','error','measuring');
+  document.getElementById('gps-start-btn').style.display='';
+  document.getElementById('gps-speed').textContent='–';document.getElementById('gps-speed').classList.add('empty');
+}
+function addGpsSample(kmh){
+  gpsSamples.push(kmh);
+  document.getElementById('gps-progress').style.width=Math.min(100,(gpsSamples.length/GPS_MAX_SEC)*100)+'%';
+  if(gpsSamples.length>=GPS_MIN){const r=gpsSamples.slice(-GPS_MIN);if(Math.max(...r)-Math.min(...r)<=GPS_THRESHOLD){lockInSpeed(r.reduce((a,b)=>a+b,0)/r.length);return;}}
+  document.getElementById('gps-status').textContent=t('measuring')+' ('+gpsSamples.length+'s)';
+}
+function lockInSpeed(kmh){
+  const id=measuringRowId;cancelMeasure();
+  const inp=document.getElementById('k-'+id);if(inp){inp.value=kmh.toFixed(1);recalcAll();}
+  const row=document.querySelector('.passage-row[data-id="'+id+'"]');if(row) row.classList.remove('selected');
+  selectedRowId=null;document.getElementById('gps-bar').classList.remove('measuring');
+  document.getElementById('gps-status').textContent=t('stable');
+  setTimeout(()=>{document.getElementById('gps-status').textContent='';},2000);
+}
+function cancelMeasure(){
+  gpsSamples=[];measuringRowId=null;
+  if(measureTimeout){clearTimeout(measureTimeout);measureTimeout=null;}
+  document.getElementById('gps-progress').style.width='0%';
+  document.getElementById('gps-status').textContent='';
+  document.getElementById('gps-bar').classList.remove('measuring');
+}
+function selectRow(id){
+  if(selectedRowId!==null){const prev=document.querySelector('.passage-row[data-id="'+selectedRowId+'"]');if(prev) prev.classList.remove('selected');if(measuringRowId===selectedRowId) cancelMeasure();}
+  if(selectedRowId===id){selectedRowId=null;return;}
+  selectedRowId=id;const row=document.querySelector('.passage-row[data-id="'+id+'"]');if(row) row.classList.add('selected');
+  updateUseSpeedBtn();
+}
+function updateUseSpeedBtn(){
+  if(selectedRowId===null) return;
+  const btn=document.getElementById('use-speed-'+selectedRowId);if(!btn) return;
+  const has=currentGpsSpeed!==null&&currentGpsSpeed>0.5;
+  btn.disabled=!has;btn.textContent=has?t('useSpeed')+' '+currentGpsSpeed.toFixed(1)+' km/h':t('waitingGps');
+}
+function useCurrentSpeed(id){
+  if(currentGpsSpeed===null||gpsWatchId===null) return;
+  measuringRowId=id;gpsSamples=[];
+  document.getElementById('gps-bar').classList.add('measuring');
+  document.getElementById('gps-progress').style.width='0%';
+  document.getElementById('gps-status').textContent=t('measuring');
+  measureTimeout=setTimeout(()=>{
+    if(gpsSamples.length>0){const avg=gpsSamples.reduce((a,b)=>a+b,0)/gpsSamples.length;lockInSpeed(avg);}
+    else cancelMeasure();
+  },GPS_MAX_SEC*1000);
+}
+
+// ══ PLANNING ══
+let zoneCount=0;
+
+function zoneRawMeters(id){
+  // Returns absolute meter positions {from, to}
+  const fkm=parseFloat(document.getElementById('z-fkm-'+id)?.value)||0;
+  const fm=parseFloat(document.getElementById('z-fm-'+id)?.value)||0;
+  const tkm=parseFloat(document.getElementById('z-tkm-'+id)?.value)||0;
+  const tm=parseFloat(document.getElementById('z-tm-'+id)?.value)||0;
+  return{from:fkm*1000+fm, to:tkm*1000+tm};
+}
+function zoneDistance(id){
+  const{from,to}=zoneRawMeters(id);return Math.abs(to-from);
+}
+function zoneKmStr(id){
+  const fkm=document.getElementById('z-fkm-'+id)?.value||'';
+  const fm=document.getElementById('z-fm-'+id)?.value||'';
+  const tkm=document.getElementById('z-tkm-'+id)?.value||'';
+  const tm=document.getElementById('z-tm-'+id)?.value||'';
+  if(!fkm&&!fm&&!tkm&&!tm) return null;
+  return fkm+'+'+(fm||'0')+' → '+tkm+'+'+(tm||'0');
+}
+function isMergedWithNext(id){
+  return document.getElementById('merge-'+id)?.checked||false;
+}
+function getMergeSpeed(id){
+  return parseFloat(document.getElementById('mspeed-'+id)?.value)||15;
+}
+
+// Calculate total time for a zone (or group of merged zones starting at id)
+// Returns {slipMins, totalMins, distMeters}
+function calcZoneGroup(startId, trainId){
+  if(!trainId) return null;
+  const profile=getProfile(trainId);
+  const speeds=(profile.speeds||[]).filter(s=>s&&s>0);
+  const trainLen=profile.length||0;
+  if(speeds.length===0) return null;
+
+  // Collect all zone ids in this group
+  const allZoneIds=[];
+  document.querySelectorAll('.zone-card').forEach(c=>allZoneIds.push(parseInt(c.id.replace('zone-card-',''))));
+  const startIdx=allZoneIds.indexOf(startId);
+  if(startIdx<0) return null;
+
+  // Walk merged chain
+  const groupIds=[startId];
+  let cur=startIdx;
+  while(cur<allZoneIds.length-1 && isMergedWithNext(allZoneIds[cur])){
+    groupIds.push(allZoneIds[cur+1]);
+    cur++;
+  }
+
+  // Per pass: sum of (each zone slip + gap transits)
+  let perPassMins=0;
+  let totalSlipDist=0;
+  for(let i=0;i<groupIds.length;i++){
+    const zid=groupIds[i];
+    const dist=zoneDistance(zid);if(dist===0) return null;
+    const effDist=dist+trainLen;
+    totalSlipDist+=dist;
+    // We'll compute per-pass time per zone below
+  }
+
+  // For each pass, time = sum of zones + gaps between them
+  // A pass runs all zones in order (or reverse), with transit between them
+  let slipMins=0;
+  speeds.forEach((spd,passIdx)=>{
+    // Each zone in the group
+    for(let i=0;i<groupIds.length;i++){
+      const zid=groupIds[i];
+      const dist=zoneDistance(zid);
+      const effDist=dist+trainLen;
+      slipMins+=(effDist/1000)/spd*60;
+    }
+    // Add transit gaps between zones (one per gap per pass)
+    for(let i=0;i<groupIds.length-1;i++){
+      const zid=groupIds[i];
+      // Gap = absolute distance between end of zone i and start of zone i+1, minus trainLen on each side
+      const{from:f1,to:t1}=zoneRawMeters(zid);
+      const{from:f2,to:t2}=zoneRawMeters(groupIds[i+1]);
+      // End of zone 1 (with trainLen) to start of zone 2
+      const endZ1=Math.max(f1,t1)+trainLen; // high end + trainLen
+      const startZ2=Math.min(f2,t2);        // low end of zone 2
+      const gapMeters=Math.max(0,startZ2-endZ1);
+      const mspeed=getMergeSpeed(zid);
+      if(gapMeters>0&&mspeed>0) slipMins+=(gapMeters/1000)/mspeed*60;
+    }
+  });
+
+  // Slagg
+  const withSlagg=document.getElementById('z-slagg-'+startId)?.checked;
+  let totalMins=slipMins;
+  let slaggMins=0;
+  if(withSlagg){
+    const profiles=loadProfiles();
+    const minkm=profiles[trainId]?.slaggMinkm||20;
+    // Slagg based on total slip distance of all zones
+    const effTotalDist=totalSlipDist+trainLen;
+    slaggMins=(effTotalDist/1000)*minkm;
+    // Last pass replaced by slagg
+    let lastPassMins=0;
+    for(let i=0;i<groupIds.length;i++){
+      lastPassMins+=(zoneDistance(groupIds[i])+trainLen)/1000/speeds[speeds.length-1]*60;
+    }
+    // Also add last gap transits
+    for(let i=0;i<groupIds.length-1;i++){
+      const zid=groupIds[i];
+      const{from:f1,to:t1}=zoneRawMeters(zid);
+      const{from:f2,to:t2}=zoneRawMeters(groupIds[i+1]);
+      const gapMeters=Math.max(0,Math.min(f2,t2)-(Math.max(f1,t1)+trainLen));
+      const mspeed=getMergeSpeed(zid);
+      if(gapMeters>0&&mspeed>0) lastPassMins+=(gapMeters/1000)/mspeed*60;
+    }
+    totalMins=slipMins-lastPassMins+slaggMins;
+  }
+
+  return{slipMins,totalMins,distMeters:totalSlipDist,slaggMins,withSlagg,groupIds};
+}
+
+function addZone(){
+  zoneCount++;const id=zoneCount;
+  const card=document.createElement('div');card.className='zone-card';card.id='zone-card-'+id;
+  card.innerHTML=buildZoneCardInner(id,{});
+  document.getElementById('zones-container').appendChild(card);
+  savePlanState();
+}
+
+function buildZoneCardInner(id,vals){
+  const v=vals||{};
+  const mergeChecked=v.merged?'checked':'';
+  const mspeedVal=v.mergeSpeed||15;
+  return `
+    <div class="zone-header">
+      <span class="zone-title">${t('zone')} ${id}</span>
+      <div class="zone-header-btns">
+        <button class="merge-btn ${mergeChecked?'active':''}" id="merge-btn-${id}" onclick="toggleMerge(${id})">${mergeChecked?t('unmerge'):t('mergeWith')}</button>
+        <button class="zone-delete" onclick="deleteZone(${id})">✕</button>
+      </div>
+    </div>
+    <div class="zone-dist" id="z-dist-${id}"></div>
+    <div class="zone-km-row">
+      <div class="km-input-group">
+        <input type="number" class="km-input wide" id="z-fkm-${id}" placeholder="km" min="0" oninput="recalcZoneGroup(${id})" inputmode="decimal" value="${v.fkm||''}">
+        <span>+</span>
+        <input type="number" class="km-input narrow" id="z-fm-${id}" placeholder="m" min="0" max="999" oninput="recalcZoneGroup(${id})" inputmode="decimal" value="${v.fm||''}">
+      </div>
+      <span class="zone-sep">→</span>
+      <div class="km-input-group">
+        <input type="number" class="km-input wide" id="z-tkm-${id}" placeholder="km" min="0" oninput="recalcZoneGroup(${id})" inputmode="decimal" value="${v.tkm||''}">
+        <span>+</span>
+        <input type="number" class="km-input narrow" id="z-tm-${id}" placeholder="m" min="0" max="999" oninput="recalcZoneGroup(${id})" inputmode="decimal" value="${v.tm||''}">
+      </div>
+    </div>
+    <div class="merge-gap-row" id="merge-gap-${id}" style="${mergeChecked?'':'display:none'}">
+      <span class="merge-gap-label">${t('mergeGap')}</span>
+      <input type="number" class="merge-speed-input" id="mspeed-${id}" value="${mspeedVal}" min="1" step="1" oninput="recalcPlan()" inputmode="decimal">
+      <span class="merge-speed-unit">${t('mergeSpeed')}</span>
+    </div>
+    <input type="checkbox" id="merge-${id}" style="display:none" ${mergeChecked} onchange="recalcPlan()">
+    <label class="zone-slagg-label">
+      <input type="checkbox" id="z-slagg-${id}" onchange="recalcZoneGroup(${id})" ${v.slagg?'checked':''}>
+      <span class="mini-switch"><span class="mini-track"></span><span class="mini-thumb"></span></span>
+      <span class="zone-slagg-text">${t('slaggning')}</span>
+    </label>
+    <div class="zone-result" id="z-result-${id}"></div>
+    <button class="zone-import-btn" id="z-import-${id}" onclick="importZoneToSlip(${id})">${t('importToSlip')}</button>
+  `;
+}
+
+function toggleMerge(id){
+  const cb=document.getElementById('merge-'+id);
+  const btn=document.getElementById('merge-btn-'+id);
+  const gapRow=document.getElementById('merge-gap-'+id);
+  cb.checked=!cb.checked;
+  btn.textContent=cb.checked?t('unmerge'):t('mergeWith');
+  btn.classList.toggle('active',cb.checked);
+  gapRow.style.display=cb.checked?'flex':'none';
+  recalcPlan();savePlanState();
+}
+
+function deleteZone(id){
+  document.getElementById('zone-card-'+id)?.remove();
+  recalcPlanTotals();savePlanState();
+}
+
+// Find the group leader (first zone in merged chain) for a given zone
+function getGroupLeader(targetId){
+  const allZoneIds=[];
+  document.querySelectorAll('.zone-card').forEach(c=>allZoneIds.push(parseInt(c.id.replace('zone-card-',''))));
+  const idx=allZoneIds.indexOf(targetId);
+  if(idx<0) return targetId;
+  // Walk backwards to find leader
+  let leader=allZoneIds[idx];
+  for(let i=idx-1;i>=0;i--){
+    if(isMergedWithNext(allZoneIds[i])) leader=allZoneIds[i];
+    else break;
+  }
+  return leader;
+}
+
+function recalcZoneGroup(id){
+  const leaderId=getGroupLeader(id);
+  const trainId=document.getElementById('plan-train-select').value;
+  const result=calcZoneGroup(leaderId,trainId);
+  const resultEl=document.getElementById('z-result-'+leaderId);
+  const distEl=document.getElementById('z-dist-'+leaderId);
+
+  if(!result){
+    if(resultEl) resultEl.innerHTML='';
+    if(distEl) distEl.textContent='';
+    recalcPlanTotals();savePlanState();
+    return;
+  }
+
+  const{slipMins,totalMins,distMeters,slaggMins,withSlagg,groupIds}=result;
+  const profile=getProfile(trainId)||{speeds:[]};
+  const speeds=(profile.speeds||[]).filter(s=>s&&s>0);
+  const trainLen=profile.length||0;
+
+  if(distEl) distEl.textContent=(distMeters/1000).toFixed(3)+' km ('+distMeters.toLocaleString('sv-SE')+' m)';
+
+  let html='';
+  // Per zone dist
+  if(groupIds.length>1){
+    groupIds.forEach((zid,i)=>{
+      const d=zoneDistance(zid);
+      const km=zoneKmStr(zid);
+      html+='<div class="zone-result-row"><span class="zone-result-label">Zon '+(i+1)+(km?' ('+km+')':'')+'</span><span class="zone-result-value" style="font-size:11px">'+(d/1000).toFixed(2)+'km</span></div>';
+    });
+  }
+  // Per pass
+  speeds.forEach((spd,i)=>{
+    let passMins=0;
+    groupIds.forEach(zid=>{const effDist=zoneDistance(zid)+trainLen;passMins+=(effDist/1000)/spd*60;});
+    // Add gaps
+    for(let g=0;g<groupIds.length-1;g++){
+      const zid=groupIds[g];
+      const{from:f1,to:t1}=zoneRawMeters(zid);
+      const{from:f2,to:t2}=zoneRawMeters(groupIds[g+1]);
+      const gapM=Math.max(0,Math.min(f2,t2)-(Math.max(f1,t1)+trainLen));
+      const ms=getMergeSpeed(zid);
+      if(gapM>0&&ms>0) passMins+=(gapM/1000)/ms*60;
+    }
+    html+='<div class="zone-result-row"><span class="zone-result-label">'+t('passLabel')+' '+(i+1)+' ('+spd+' km/h)</span><span class="zone-result-value" style="font-size:12px">'+fmt(passMins)+'</span></div>';
+  });
+  html+='<div class="zone-result-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="zone-result-label">'+t('planSlipTime')+'</span><span class="zone-result-value">'+fmt(slipMins)+'</span></div>';
+  if(withSlagg){
+    html+='<div class="zone-result-row"><span class="zone-result-label">'+t('planSlaggTime')+'</span><span class="zone-result-value blue">'+fmt(slaggMins)+'</span></div>';
+    html+='<div class="zone-result-row"><span class="zone-result-label">'+t('planTotalTime')+'</span><span class="zone-result-value total">'+fmt(totalMins)+'</span></div>';
+  } else {
+    html+='<div class="zone-result-row"><span class="zone-result-label">'+t('planTotalTime')+'</span><span class="zone-result-value total">'+fmt(totalMins)+'</span></div>';
+  }
+  if(resultEl) resultEl.innerHTML=html;
+  recalcPlanTotals();savePlanState();
+}
+
+function recalcPlan(){
+  // Find group leaders and recalc each group
+  const processed=new Set();
+  document.querySelectorAll('.zone-card').forEach(card=>{
+    const id=parseInt(card.id.replace('zone-card-',''));
+    const leader=getGroupLeader(id);
+    if(!processed.has(leader)){processed.add(leader);recalcZoneGroup(leader);}
+  });
+}
+
+function recalcPlanTotals(){
+  const trainId=document.getElementById('plan-train-select').value;
+  let grandTotal=0,totalDist=0,hasAny=false;
+  const processed=new Set();
+  document.querySelectorAll('.zone-card').forEach(card=>{
+    const id=parseInt(card.id.replace('zone-card-',''));
+    const leader=getGroupLeader(id);
+    if(processed.has(leader)) return;
+    processed.add(leader);
+    const result=calcZoneGroup(leader,trainId);
+    if(!result) return;
+    hasAny=true;totalDist+=result.distMeters;grandTotal+=result.totalMins;
+  });
+  const totEl=document.getElementById('plan-totals'),gridEl=document.getElementById('plan-totals-grid');
+  if(!hasAny){totEl.style.display='none';return;}
+  totEl.style.display='block';
+  gridEl.innerHTML=
+    '<div class="total-block"><div class="total-label">'+t('planDist')+'</div><div class="total-value">'+(totalDist/1000).toFixed(2)+' km</div></div>'+
+    '<div class="total-block"><div class="total-label">'+t('planTotalTime')+'</div><div class="total-value" style="font-size:26px;color:var(--accent)">'+fmt(grandTotal)+'</div></div>';
+}
+
+function importZoneToSlip(zoneId){
+  const leaderId=getGroupLeader(zoneId);
+  const trainId=document.getElementById('plan-train-select').value;
+  const result=calcZoneGroup(leaderId,trainId);
+  const btn=document.getElementById('z-import-'+zoneId);
+  if(!result||result.distMeters===0){
+    if(btn){const orig=btn.textContent;btn.textContent=t('importNoZone');setTimeout(()=>btn.textContent=orig,2500);}
+    return;
+  }
+  importedZoneId=leaderId;
+  // Build label from group
+  const labels=result.groupIds.map(id=>zoneKmStr(id)).filter(Boolean).join(' + ');
+  importedZoneLabel=labels||null;
+  switchTab('slip');
+  if(trainId){document.getElementById('train-select').value=trainId;selectTrain();}
+  document.getElementById('shared-meters').value=result.distMeters;
+  // Show zone label
+  if(importedZoneLabel){
+    const lbl=document.getElementById('slip-zone-label');
+    lbl.textContent=importedZoneLabel;lbl.classList.add('visible');
+  }
+  recalcAll();
+  if(btn){const orig=btn.textContent;btn.style.borderColor='var(--green)';btn.style.color='var(--green)';btn.textContent=t('importDone');setTimeout(()=>{btn.textContent=orig;btn.style.borderColor='';btn.style.color='';},2000);}
+}
+
+// ── DONE ZONES ──
+function loadDone(){try{const r=localStorage.getItem('doneZones');return r?JSON.parse(r):[];}catch(e){return[];}}
+function saveDone(d){try{localStorage.setItem('doneZones',JSON.stringify(d));}catch(e){}}
+function renderDoneZones(){
+  const done=loadDone();
+  const container=document.getElementById('done-zones-container');
+  const emptyEl=document.getElementById('done-empty');
+  container.querySelectorAll('.done-zone-card').forEach(c=>c.remove());
+
+  // Shift totals
+  const totBlock=document.getElementById('done-shift-totals-block');
+  const totGrid=document.getElementById('done-shift-grid');
+  if(done.length===0){
+    if(emptyEl) emptyEl.style.display='block';
+    totBlock.style.display='none';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display='none';
+
+  // Calculate shift totals
+  let totalMeters=0,totalMins=0;
+  done.forEach(e=>{totalMeters+=e.meters||0;totalMins+=e.elapsedMins||0;});
+  totBlock.style.display='block';
+  totGrid.innerHTML=
+    '<div class="total-block"><div class="total-label">'+t('shiftMeters')+'</div><div class="total-value">'+(totalMeters/1000).toFixed(2)+' km</div></div>'+
+    '<div class="total-block"><div class="total-label">'+t('shiftTime')+'</div><div class="total-value" style="font-size:22px">'+fmt(totalMins)+'</div></div>';
+
+  // Individual zone cards (newest first)
+  done.slice().reverse().forEach((entry,i)=>{
+    const card=document.createElement('div');card.className='done-zone-card';
+    const zoneNum=done.length-i;
+    const kmLabel=entry.label||'';
+    const distKm=entry.meters>0?(entry.meters/1000).toFixed(3)+' km ('+entry.meters.toLocaleString('sv-SE')+' m)':'–';
+    card.innerHTML=
+      '<div class="done-zone-header"><span class="done-zone-title">'+t('doneZone')+' '+zoneNum+(entry.trainId?' — '+entry.trainId:'')+'</span></div>'+
+      (kmLabel?'<div class="done-zone-km">'+kmLabel+'</div>':'')+
+      '<div class="done-zone-meta">'+
+        '<div class="done-zone-item">'+t('totalDist')+': <span>'+distKm+'</span></div>'+
+        '<div class="done-zone-item">'+t('doneTime')+': <span>'+fmt(entry.elapsedMins)+'</span></div>'+
+        (entry.withSlagg?'<div class="done-zone-item">'+t('slaggning')+': <span>'+fmt(entry.slaggMins)+'</span></div>':'')+
+      '</div>';
+    container.insertBefore(card,container.firstChild);
+  });
+}
+function clearDone(){saveDone([]);renderDoneZones();}
+
+// ── PLAN PERSISTENCE ──
+function savePlanState(){
+  const zones=[];
+  document.querySelectorAll('.zone-card').forEach(card=>{
+    const id=parseInt(card.id.replace('zone-card-',''));
+    zones.push({id,
+      fkm:document.getElementById('z-fkm-'+id)?.value||'',
+      fm:document.getElementById('z-fm-'+id)?.value||'',
+      tkm:document.getElementById('z-tkm-'+id)?.value||'',
+      tm:document.getElementById('z-tm-'+id)?.value||'',
+      slagg:document.getElementById('z-slagg-'+id)?.checked||false,
+      merged:document.getElementById('merge-'+id)?.checked||false,
+      mergeSpeed:document.getElementById('mspeed-'+id)?.value||'15',
+    });
+  });
+  const trainId=document.getElementById('plan-train-select').value;
+  try{localStorage.setItem('planState',JSON.stringify({zones,trainId,zoneCount}));}catch(e){}
+}
+function loadPlanState(){
+  try{
+    const raw=localStorage.getItem('planState');if(!raw) return;
+    const state=JSON.parse(raw);
+    zoneCount=state.zoneCount||0;
+    if(state.trainId) document.getElementById('plan-train-select').value=state.trainId;
+    (state.zones||[]).forEach(z=>{
+      const id=z.id;
+      const card=document.createElement('div');card.className='zone-card';card.id='zone-card-'+id;
+      card.innerHTML=buildZoneCardInner(id,z);
+      document.getElementById('zones-container').appendChild(card);
+    });
+    recalcPlan();
+  }catch(e){}
+}
+function clearPlan(){
+  document.getElementById('zones-container').innerHTML='';
+  document.getElementById('plan-train-select').value='';
+  document.getElementById('plan-totals').style.display='none';
+  zoneCount=0;importedZoneId=null;
+  try{localStorage.removeItem('planState');}catch(e){}
+}
+
+// ── INIT ──
+try{lang=localStorage.getItem('appLang')||'sv';}catch(e){}
+try{const th=localStorage.getItem('appTheme')||'dark';setTheme(th);}catch(e){}
+document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.id==='lang-'+lang));
+applyTranslations();
+addRow();addRow();addRow();
+loadPlanState();
+renderDoneZones();
+</script>
+</body>
+</html>
