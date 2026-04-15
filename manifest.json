@@ -1,0 +1,10 @@
+{
+  "name": "Sliptåg – Passagekalkylator",
+  "short_name": "Passagekalk",
+  "description": "Tidsberäkning per passage för rälsslipning",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d0f14",
+  "theme_color": "#f0a500",
+  "orientation": "portrait-primary"
+}
